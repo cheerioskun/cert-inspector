@@ -11,6 +11,7 @@ require (
 require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jmichiels/tree v0.0.0-20171219112600-211d1cda377a // indirect
 	github.com/joomcode/errorx v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect

@@ -10,26 +10,12 @@ import (
 	"slices"
 
 	"github.com/inconshreveable/log15"
-	"github.com/joomcode/errorx"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
-var ParseError = errorx.NewType(errorx.CommonErrors, "parse_error")
-var ReadError = errorx.NewType(errorx.CommonErrors, "read_error")
-
 // certExtensions defines the valid certificate file extensions.
 var certExtensions = []string{".crt", ".pem", ".cer"}
-
-// CertEntry represents a certificate with metadata
-type CertEntry struct {
-	// Path represents where on the filesystem the certificate was found
-	Path string `json:"path"`
-	// Raw is the raw certificate data
-	Raw []byte `json:"raw"`
-	// Index is the index of the certificate in the file
-	Index int `json:"index"`
-}
 
 // searchCmd represents the search command.
 var searchCmd = &cobra.Command{
@@ -53,7 +39,7 @@ It saves the certificates it finds in a single file under /tmp/.cert-inspector/c
 		}
 		// Write the certificates found to a cache file
 		logger.Info("Found certificates", "count", len(certs))
-		file, err := fs.OpenFile("/tmp/.cert-inspector/cache", os.O_CREATE|os.O_WRONLY, 0644)
+		file, err := fs.OpenFile("/tmp/.cert-inspector/cache", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			logger.Error("Failed to open cache file", "error", err)
 			os.Exit(1)
@@ -106,4 +92,25 @@ func SearchAndParse(fs afero.Fs, path string) ([]CertEntry, error) {
 		return nil
 	})
 	return certs, err
+}
+
+func LoadCerts() ([]CertEntry, error) {
+	fs := afero.NewOsFs()
+	file, err := fs.Open("/tmp/.cert-inspector/cache")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	var certs []CertEntry
+	decoder := json.NewDecoder(file)
+	for decoder.More() {
+		var cert CertEntry
+		err = decoder.Decode(&cert)
+		if err != nil {
+			return nil, err
+		}
+		cert.Certificate, _ = x509.ParseCertificate(cert.Raw)
+		certs = append(certs, cert)
+	}
+	return certs, nil
 }

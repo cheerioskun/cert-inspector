@@ -17,18 +17,9 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-var graphCmd = &cobra.Command{
-	Use:   "graph",
-	Short: "A short description of graph",
-	Long:  `A longer description of graph`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// This is where you'd put the logic for the graph command
-	},
-}
-
 func init() {
 	rootCmd.AddCommand(searchCmd)
-	rootCmd.AddCommand(graphCmd)
+	rootCmd.AddCommand(treeCmd)
 	os.Mkdir("/tmp/.cert-inspector", fs.ModeDir|0766)
 }
 
