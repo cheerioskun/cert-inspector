@@ -76,7 +76,7 @@ func (n *Node) AddCertEntry(cert CertEntry) error {
 }
 
 func (n *Node) String() string {
-	return fmt.Sprintf("%s", n.self[0].Certificate.Subject.String())
+	return fmt.Sprintf("%s(%d-%d):%s", n.self[0].Certificate.Subject.CommonName, len(n.self), len(n.children), n.self[0].Path)
 }
 
 func LinkNodes(parent, child *Node) {
@@ -99,12 +99,14 @@ func NewCertificateForest(entries []CertEntry) *CertificateForest {
 		_, ok := certIndex[subjectKeyID]
 		if !ok {
 			certIndex[subjectKeyID] = NewNode(entry)
+			return certIndex[subjectKeyID]
 		} else {
 			certIndex[subjectKeyID].AddCertEntry(entry)
+			return nil
 		}
-		return certIndex[subjectKeyID]
 	})
-
+	// Remove the nil nodes
+	nodes = lo.Reject(nodes, func(n *Node, _ int) bool { return n == nil })
 	// Link the nodes to form a forest
 	for _, node := range nodes {
 		authKeyId := string(node.self[0].Certificate.AuthorityKeyId)

@@ -31,7 +31,8 @@ It saves the certificates it finds in a single file under /tmp/.cert-inspector/c
 		logger.Info("Searching under path", "path", args[0])
 		fs := afero.NewOsFs()
 		// Convert the path to an absolute path
-		path, _ := filepath.Abs(args[0])
+		// path, _ := filepath.Abs(args[0])
+		path := args[0]
 		certs, err := SearchAndParse(fs, path)
 		if err != nil {
 			logger.Error("Failed to search and parse", "error", err)
