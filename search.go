@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -26,16 +27,18 @@ Search recursively under a given path for certificates.
 It saves the certificates it finds in a single file under /tmp/.cert-inspector/cache`,
 
 	Args: cobra.ExactArgs(1),
+
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := log15.New(log15.Ctx{"module": "search"})
 		logger.Info("Searching under path", "path", args[0])
 		fs := afero.NewOsFs()
 		// Convert the path to an absolute path
 		// path, _ := filepath.Abs(args[0])
+		toExclude, _ := cmd.Flags().GetStringArray("exclude-dirs")
 		path := args[0]
-		certs, err := SearchAndParse(fs, path)
+		certs, err := SearchAndParse(fs, path, toExclude)
 		if err != nil {
-			logger.Error("Failed to search and parse", "error", err)
+			logger.Error("Failed to search and parse", "error", fmt.Sprintf("%+v", err))
 			os.Exit(1)
 		}
 		// Write the certificates found to a cache file
@@ -57,11 +60,17 @@ It saves the certificates it finds in a single file under /tmp/.cert-inspector/c
 
 // SearchAndParse recursively searches for certificate files under the given path.
 // It returns a slice of x509.Certificate pointers and an error, if any.
-func SearchAndParse(fs afero.Fs, path string) ([]CertEntry, error) {
+func SearchAndParse(fs afero.Fs, path string, excludeDirs []string) ([]CertEntry, error) {
 	var certs []CertEntry
 	err := afero.Walk(fs, path, func(p string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return err
+		}
+		// Check if the directory is in the exclude list
+		for _, dir := range excludeDirs {
+			if filepath.HasPrefix(p, dir) {
+				return nil
+			}
 		}
 		// Check if it's a cert file using the extension
 		if slices.Contains(certExtensions, filepath.Ext(info.Name())) && info.Size() > 0 {
@@ -78,8 +87,8 @@ func SearchAndParse(fs afero.Fs, path string) ([]CertEntry, error) {
 				if block == nil {
 					break
 				}
-				if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
-					return ParseError.New("invalid certificate")
+				if block.Type != "CERTIFICATE" {
+					continue
 				}
 				certBytes := block.Bytes
 				cert, err := x509.ParseCertificate(certBytes)
@@ -95,8 +104,9 @@ func SearchAndParse(fs afero.Fs, path string) ([]CertEntry, error) {
 	return certs, err
 }
 
-func LoadCerts() ([]CertEntry, error) {
-	fs := afero.NewOsFs()
+// LoadCerts loads the certificates from the cache file.
+// It takes a filesystem and returns a slice of CertEntry and an error, if any.
+func LoadCerts(fs afero.Fs) ([]CertEntry, error) {
 	file, err := fs.Open("/tmp/.cert-inspector/cache")
 	if err != nil {
 		return nil, err

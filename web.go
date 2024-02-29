@@ -9,6 +9,7 @@ import (
 	"github.com/jmichiels/tree"
 	"github.com/joomcode/errorx"
 	"github.com/samber/lo"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -21,8 +22,9 @@ var treeCmd = &cobra.Command{
 	Long:  `A longer description of tree`,
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := log15.New(log15.Ctx{"module": "tree"})
+		fs := afero.NewOsFs()
 		// Load the certificates from the cache file
-		certs, err := LoadCerts()
+		certs, err := LoadCerts(fs)
 		if err != nil {
 			logger.Error("Failed to load certificates", "error", err)
 			os.Exit(1)

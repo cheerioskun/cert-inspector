@@ -19,6 +19,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(searchCmd)
+	searchCmd.PersistentFlags().StringArray("exclude-dirs", []string{}, "Comma-separated list of directories to exclude")
 	rootCmd.AddCommand(treeCmd)
 	os.Mkdir("/tmp/.cert-inspector", fs.ModeDir|0766)
 }
