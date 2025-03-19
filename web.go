@@ -45,7 +45,6 @@ type CertificateForest struct {
 }
 
 func (f *CertificateForest) RootNodes() []tree.Node {
-	// typecast into the interface type
 	return lo.Map(f.trees, func(node *Node, _ int) tree.Node {
 		return tree.Node(node)
 	})
@@ -60,16 +59,16 @@ func (f *CertificateForest) ChildrenNodes(node tree.Node) []tree.Node {
 }
 
 type Node struct {
-	self     []CertEntry
+	self     []*CertEntry
 	parent   *Node
 	children []*Node
 }
 
-func NewNode(self CertEntry) *Node {
-	return &Node{self: []CertEntry{self}}
+func NewNode(self *CertEntry) *Node {
+	return &Node{self: []*CertEntry{self}}
 }
 
-func (n *Node) AddCertEntry(cert CertEntry) error {
+func (n *Node) AddCertEntry(cert *CertEntry) error {
 	if len(n.self) == 0 || slices.Equal(n.self[0].Raw, cert.Raw) {
 		n.self = append(n.self, cert)
 		return nil
@@ -89,14 +88,14 @@ func LinkNodes(parent, child *Node) {
 	parent.children = append(parent.children, child)
 }
 
-func NewCertificateForest(entries []CertEntry) *CertificateForest {
+func NewCertificateForest(entries []*CertEntry) *CertificateForest {
 	forest := &CertificateForest{}
 	// certIndex will be used to quickly find certificates by their subject key identifiers
 	// the same certificate can be present at multiple places in the filesystem
 	certIndex := map[string]*Node{}
 
 	// Create the coalesced nodes. Each certificate corresponds to a node in the forest.
-	nodes := lo.Map(entries, func(entry CertEntry, _ int) *Node {
+	nodes := lo.Map(entries, func(entry *CertEntry, _ int) *Node {
 		subjectKeyID := string(entry.Certificate.SubjectKeyId)
 		_, ok := certIndex[subjectKeyID]
 		if !ok {

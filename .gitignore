@@ -1,2 +1,3 @@
 testdata/*
 cert-inspector*
+create_chain.sh

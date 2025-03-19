@@ -48,13 +48,13 @@ It saves the certificates it finds in a single file under /tmp/.cert-inspector/c
 			logger.Error("Failed to open cache file", "error", err)
 			os.Exit(1)
 		}
-		for _, cert := range certs {
-			contents, _ := json.MarshalIndent(cert, "", "    ")
-			_, err = file.Write(contents)
-			if err != nil {
-				logger.Error("Failed to write certificate to cache", "path", cert.Path, "error", err)
-			}
+
+		contents, _ := json.MarshalIndent(certs, "", "    ")
+		_, err = file.Write(contents)
+		if err != nil {
+			logger.Error("Failed to write certificates to cache", "error", err)
 		}
+
 	},
 }
 
@@ -106,22 +106,24 @@ func SearchAndParse(fs afero.Fs, path string, excludeDirs []string) ([]CertEntry
 
 // LoadCerts loads the certificates from the cache file.
 // It takes a filesystem and returns a slice of CertEntry and an error, if any.
-func LoadCerts(fs afero.Fs) ([]CertEntry, error) {
+func LoadCerts(fs afero.Fs) ([]*CertEntry, error) {
 	file, err := fs.Open("/tmp/.cert-inspector/cache")
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	var certs []CertEntry
-	decoder := json.NewDecoder(file)
-	for decoder.More() {
-		var cert CertEntry
-		err = decoder.Decode(&cert)
-		if err != nil {
-			return nil, err
-		}
+	var certs []*CertEntry
+	// Read everything from the file
+	contents, err := afero.ReadAll(file)
+	if err != nil {
+		return nil, ReadError.Wrap(err, "failed to read cache file")
+	}
+	err = json.Unmarshal(contents, &certs)
+	if err != nil {
+		return nil, ParseError.Wrap(err, "failed to parse cache file")
+	}
+	for _, cert := range certs {
 		cert.Certificate, _ = x509.ParseCertificate(cert.Raw)
-		certs = append(certs, cert)
 	}
 	return certs, nil
 }

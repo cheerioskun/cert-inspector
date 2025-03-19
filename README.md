@@ -21,3 +21,11 @@ Or you can build it from source like so
 ```sh
 go build -o cert-inspector ./...
 ```
+
+## Usage
+The tool has two commands: search and tree. Search is used to crawl the filesystem and index all the certs. Tree is used to visualize the temporary index created.
+
+```sh
+$> cert-inspector search /etc/
+$> cert-inspector tree
+```
