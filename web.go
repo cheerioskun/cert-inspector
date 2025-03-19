@@ -32,7 +32,8 @@ var treeCmd = &cobra.Command{
 		logger.Info("Loaded certificates", "count", len(certs))
 		// Create the certificate forest
 		forest := NewCertificateForest(certs)
-		logger.Debug("Created certificate forest", "count", len(forest.trees))
+		logger.Debug("Created certificate forest",
+			"trees", len(forest.trees))
 
 		// Print the forest
 		tree.Write(forest, os.Stdout)

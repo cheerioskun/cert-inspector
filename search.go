@@ -123,7 +123,10 @@ func LoadCerts(fs afero.Fs) ([]*CertEntry, error) {
 		return nil, ParseError.Wrap(err, "failed to parse cache file")
 	}
 	for _, cert := range certs {
-		cert.Certificate, _ = x509.ParseCertificate(cert.Raw)
+		cert.Certificate, err = x509.ParseCertificate(cert.Raw)
+		if err != nil {
+			return nil, ParseError.Wrap(err, "failed to parse certificate at %s, index %d", cert.Path, cert.Index)
+		}
 	}
 	return certs, nil
 }
